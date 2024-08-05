@@ -1,0 +1,224 @@
+---
+title: "Conch_Stats_and_Figures"
+author: "Elsa"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo=FALSE, message=FALSE, warning=FALSE}
+## Load required libraries
+library(ggnewscale) 
+library(R.utils) 
+library(tidyverse) 
+library(ape)
+library(devtools) 
+library(ggplot2) 
+library(spaa) 
+library(vegan)
+library(matrixStats)
+library(lme4) 
+library(MuMIn) 
+library(nlme) 
+library(knitr) 
+library(kableExtra)
+library(pairwiseAdonis)
+library(sjPlot)
+library(distillR) 
+library(RColorBrewer) 
+library(reshape2) 
+library(ggpubr) 
+library(ggdendro) 
+library(grid)
+library(gplots)
+library(dendextend)
+library(stringr) 
+library(Rtsne)
+library(glue)
+library(dplyr)
+library(readxl)
+library(fmsb)
+library(gridExtra)
+library(RColorBrewer)
+```
+
+```{r directories, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+## Declare directories and files
+
+workingdir="/Users/elsa/Desktop/Conch"
+shell_data="/Users/elsa/Desktop/Conch/ConchData.xlsx"
+AC_data ="/Users/elsa/Desktop/Conch/ACData.xlsx"
+```
+
+```{r Set working directory and prepare data}
+setwd(workingdir) 
+
+shelldata <- shell_data %>%
+  read_xlsx()
+ACdata <- AC_data %>%
+  read_xlsx()
+
+# Remove samples where LT = NA
+shelldata_filtered <- shelldata %>%
+  filter(`Lip_Thickness_(mm)` != "NA")
+# Remove landfill samples for age analysis
+shelldata_snorkel <- shelldata %>%
+  filter(`age` !="landfill")
+# Remove snorkel samples where LT = NA
+shelldata_snorkel_filtered <- shelldata_snorkel %>%
+  filter(`Lip_Thickness_(mm)` != "NA")
+```
+Summary Statistics
+```{r summary statistics}
+above_SL_threshold <- subset(shelldata, shelldata$`Shell_Length_(cm)` > 17.78) # n= 139
+# Percentage above legal minimum:
+(139/159)*100 
+# = 87.4%
+
+#Summary stats of collected shells:
+summary(shelldata$`Shell_Length_(cm)`)
+sd_SL <- sd(shelldata$`Shell_Length_(cm)`)
+# SD: 2.406312
+# summary(LT)
+# sd_LT <-sd(LT)
+#SD: 4.712936
+
+LT <- shelldata_filtered$`Lip_Thickness_(mm)` %>%
+  as.numeric()
+below_LT_threshold <- subset(LT, LT <10)
+#Percentage below LT threshold:
+(110/150)*100
+# =73.33%
+```
+
+Correlation between SL and LT:
+```{r Shapiro Test for Normality of LT and SL}
+# Shapiro-Wilk test for normality
+
+SL <- shelldata_filtered$`Shell_Length_(cm)`
+shapiro_test_SL <- shapiro.test(SL)
+print(paste("Shapiro-Wilk test for Shell Length: p-value =", shapiro_test_SL$p.value))
+
+
+# Perform Shapiro-Wilk test for Lip Thickness
+LT <- shelldata_filtered$`Lip_Thickness_(mm)` %>%
+  as.numeric()
+shapiro_test_LT <- shapiro.test(LT)
+print(paste("Shapiro-Wilk test for Lip Thickness: p-value =", shapiro_test_LT$p.value))
+
+# SL p-value = 0.0163643324881693, therefore YES NORMALLY DISTRIBUTED
+# LT p-value = 9.01518073003591e-10, therefore NOT NORMALLY DISTRIBUTED
+```
+
+```{r Kendall Test for correlation LT, SL}
+
+# Kendall rank correlation test
+kendall <- cor.test(SL, LT, method = "kendall")
+
+# Print the results
+print(kendall)
+
+# Kendall Tau Correlation p-value = 0.3328, therefore the null hypothesis cannot be rejected, and the correlation between SL and LT is considered NOT SIGNIFICANT. 
+```
+Size differences between age groups:
+```{r Shapiro test for normality of age}
+# Filter the data for new, med, old ages
+#New
+new <- shelldata_snorkel %>%
+  filter(age == "new") # %>%
+new_LT <- new$`Lip_Thickness_(mm)` %>%
+  as.numeric()
+
+#Med
+med <- shelldata_snorkel %>%
+  filter(age == "med")
+med_LT <- med$`Lip_Thickness_(mm)` %>%
+  as.numeric()
+
+#Old
+old <- shelldata_snorkel %>%
+  filter(age == "old")
+old_LT <- old$`Lip_Thickness_(mm)` %>%
+  as.numeric()
+
+# Shapiro-Wilk test for normality of SL for each age group:
+#New
+shapiro_test_SL_new <- shapiro.test(new$`Shell_Length_(cm)`)
+print(paste("Shapiro-Wilk test for New SL: p-value =", shapiro_test_SL_new$p.value))
+shapiro_test_LT_new <- shapiro.test(new_LT)
+print(paste("Shapiro-Wilk test for New LT: p-value =", shapiro_test_LT_new$p.value))
+# New SL p-value = 0.0163643324881693, therefore YES NORMALLY DISTRIBUTED 
+# New LT p-value = 0.0197109860901162, therefore YES NORMALLY DISTRIBUTED
+
+#Med
+shapiro_test_SL_med <- shapiro.test(med$`Shell_Length_(cm)`)
+print(paste("Shapiro-Wilk test for Med SL: p-value =", shapiro_test_SL_med$p.value))
+shapiro_test_LT_med <- shapiro.test(med_LT)
+print(paste("Shapiro-Wilk test for Med LT: p-value =", shapiro_test_LT_med$p.value))
+# Med SL p-value = 0.00164562572947753, therefore NOT NORMAL
+# Med LT p-value = 0.000613340341968318 therefore NOT NORMAL
+
+#Old
+shapiro_test_SL_old <- shapiro.test(old$`Shell_Length_(cm)`)
+print(paste("Shapiro-Wilk test for Old SL: p-value =", shapiro_test_SL_old$p.value))
+shapiro_test_LT_old <- shapiro.test(old_LT)
+print(paste("Shapiro-Wilk test for Old LT: p-value =", shapiro_test_LT_old$p.value))
+# Old SL p-value = 0.78539080424347, therefore NORMAL
+# Old LT p-value = 6.93334380919517e-06", therefore NOT NORMAL
+```
+
+```{r Kruskal-Wallis test for differences between age groups}
+
+# Kruskal-Wallis test for SL
+KW_SL <- kruskal.test(shelldata_snorkel$`Shell_Length_(cm)` ~ age, data = shelldata_snorkel)
+KW_LT <- kruskal.test(shelldata_snorkel$`Lip_Thickness_(mm)` ~ age, data = shelldata_snorkel)
+# Print the results
+print(KW_SL)
+print(KW_LT)
+# p-value for SL = 0.7009, therefore not statistically significant
+# p-value for LT = 0.1514, therefore not statistically significant
+```
+
+Adaptive Capacity
+
+```{r load and define data}
+ACdata <- as.data.frame(ACdata)
+rownames(ACdata) <- ACdata$Fishing_Class
+```
+
+```{r AC graphs}
+# Define color palette
+col <- brewer.pal(7, "Set2")
+
+# Bar plot function
+create_bar_chart <- function(ACdata, column_name, title, fill_color) {
+  ggplot(ACdata, aes(x = rownames(ACdata), y = .data[[column_name]])) +
+    geom_bar(stat = "identity", fill = col) +
+    labs(title = title) +
+    theme_minimal() +
+    scale_x_discrete(breaks = rownames(ACdata)) +
+    scale_y_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), limits = c(0, 3)) +
+    theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
+}
+
+# Plot for Sailboat
+plot_sail <- create_bar_chart(ACdata, "Sailboat", "Sailboat")
+
+# Plot for Smallboat
+plot_smallboat <- create_bar_chart(ACdata, "Smallboat", "Smallboat")
+
+# Plot for Camp
+plot_camp <- create_bar_chart(ACdata, "Camp", "Camp")
+
+# Plot for Community
+plot_community <- create_bar_chart(ACdata, "Community", "Community")
+
+# Combine plots into a single figure
+combined_plot <- grid.arrange(plot_sail, plot_smallboat, plot_camp, plot_community, ncol = 4)
+ggsave("combined_plot.png", combined_plot, width = 30, height = 17, units = "cm")
+
+```
+
