@@ -197,13 +197,12 @@ col <- brewer.pal(7, "Set2")
 create_bar_chart <- function(ACdata, column_name, title) {
   ggplot(ACdata, aes(x = rownames(ACdata), y = .data[[column_name]])) +
     geom_bar(stat = "identity", fill = col) +
-    labs(title = title, x = NULL) +
+    labs(title = title, x = NULL, y = NULL) +
     theme_minimal() +
     scale_y_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), limits = c(0, 3)) +
-    theme(axis.text.x = element_text(size = 16, angle = 45, hjust = 1),
-          axis.title.y = element_text(size = 20),
-          axis.text.y = element_text(size = 16),
-          plot.title = element_text(size = 20, hjust = 0.5))
+    theme(axis.text.x = element_text(size = 20, angle = 45, hjust = 1),
+          axis.text.y = element_text(size = 20),
+          plot.title = element_text(size = 30, face = "bold", hjust = 0.5))
 }
 
 # Plot for Sailboat
