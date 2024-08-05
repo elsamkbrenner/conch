@@ -48,9 +48,9 @@ library(RColorBrewer)
 ```{r directories, comment="", echo=FALSE, message=FALSE, warning=FALSE}
 ## Declare directories and files
 
-workingdir="/Users/elsa/Desktop/Conch"
-shell_data="/Users/elsa/Desktop/Conch/ConchData.xlsx"
-AC_data ="/Users/elsa/Desktop/Conch/ACData.xlsx"
+workingdir="/Users/elsa/Desktop/Conch/Conch"
+shell_data="/Users/elsa/Desktop/Conch/Conch/ConchData.xlsx"
+AC_data ="/Users/elsa/Desktop/Conch/Conch/ACData.xlsx"
 ```
 
 ```{r Set working directory and prepare data}
@@ -194,14 +194,16 @@ rownames(ACdata) <- ACdata$Fishing_Class
 col <- brewer.pal(7, "Set2")
 
 # Bar plot function
-create_bar_chart <- function(ACdata, column_name, title, fill_color) {
+create_bar_chart <- function(ACdata, column_name, title) {
   ggplot(ACdata, aes(x = rownames(ACdata), y = .data[[column_name]])) +
     geom_bar(stat = "identity", fill = col) +
-    labs(title = title) +
+    labs(title = title, x = NULL) +
     theme_minimal() +
-    scale_x_discrete(breaks = rownames(ACdata)) +
     scale_y_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), limits = c(0, 3)) +
-    theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(size = 16, angle = 45, hjust = 1),
+          axis.title.y = element_text(size = 20),
+          axis.text.y = element_text(size = 16),
+          plot.title = element_text(size = 20, hjust = 0.5))
 }
 
 # Plot for Sailboat
@@ -217,8 +219,6 @@ plot_camp <- create_bar_chart(ACdata, "Camp", "Camp")
 plot_community <- create_bar_chart(ACdata, "Community", "Community")
 
 # Combine plots into a single figure
-combined_plot <- grid.arrange(plot_sail, plot_smallboat, plot_camp, plot_community, ncol = 4)
-ggsave("combined_plot.png", combined_plot, width = 30, height = 17, units = "cm")
-
+Figure3B <- grid.arrange(plot_sail, plot_smallboat, plot_camp, plot_community, ncol = 4)
 ```
 
